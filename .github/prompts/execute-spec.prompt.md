@@ -41,5 +41,6 @@ Mandatory output at end of the flow
 1. What was created or modified.
 2. What files were created or modified.
 3. What tasks of the {TASKS_FILE} were mark as completed.
-4. What is pending in the {TASKS_FILE} and why (if applicable).
-5. What pending specs can be executed next (if applicable). 
+4. Inside the {SPEC_FILE} must update in the section the STATUS to implemented. 
+5. What is pending in the {TASKS_FILE} and why (if applicable).
+6. What pending specs can be executed next (if applicable). 
