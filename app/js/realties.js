@@ -1,69 +1,101 @@
-(function () {
-  'use strict';
+(function (global) {
+  "use strict";
 
-  var storage = window.RealtorStorage;
-
-  function list() {
-    return storage.read(storage.keys.realties, []);
-  }
-
-  function getById(id) {
-    return list().find(function (realty) { return realty.id === id; }) || null;
-  }
-
-  function validate(values) {
-    var price = Number(values.price);
-    var bedrooms = Number(values.bedrooms);
-    var bathrooms = Number(values.bathrooms);
-    if (!values.title || !values.address) return 'Property name and address are required.';
-    if (!Number.isFinite(price) || price <= 0) return 'Monthly rent must be greater than zero.';
-    if (!Number.isInteger(bedrooms) || bedrooms < 0 || !Number.isInteger(bathrooms) || bathrooms < 0) return 'Bedrooms and bathrooms must be whole numbers of zero or more.';
-    return '';
-  }
-
-  function create(values) {
-    var message = validate(values);
-    var realties = list();
-    var id;
-    var realty;
-    if (message) return { ok: false, message: message };
-    id = 'realty-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    realty = {
-      id: id,
-      title: values.title,
-      address: values.address,
-      price: Number(values.price),
-      description: values.description || '',
-      status: 'available',
-      bedrooms: Number(values.bedrooms),
-      bathrooms: Number(values.bathrooms),
-      image: storage.createSeedPhotoUrl(id),
-      createdAt: new Date().toISOString()
-    };
-    if (!storage.write(storage.keys.realties, realties.concat(realty))) return { ok: false, message: 'The property could not be saved in this browser.' };
-    return { ok: true, value: realty, message: 'Property added successfully.' };
-  }
-
-  function update(id, values) {
-    var message = validate(values);
-    var realties = list();
-    var existing = realties.find(function (item) { return item.id === id; });
-    var updated;
-    if (!existing) return { ok: false, message: 'This property could not be found.' };
-    if (message) return { ok: false, message: message };
-    updated = Object.assign({}, existing, {
-      title: values.title,
-      address: values.address,
-      price: Number(values.price),
-      description: values.description || '',
-      bedrooms: Number(values.bedrooms),
-      bathrooms: Number(values.bathrooms)
-    });
-    if (!storage.write(storage.keys.realties, realties.map(function (item) { return item.id === id ? updated : item; }))) {
-      return { ok: false, message: 'The property could not be updated in this browser.' };
+  function validateRealty(data) {
+    data = data || {};
+    var required = ["title", "address", "price", "status", "bedrooms", "bathrooms"];
+    for (var i = 0; i < required.length; i += 1) {
+      if (String(data[required[i]] == null ? "" : data[required[i]]).trim() === "") {
+        return { valid: false, error: "Please complete all required fields." };
+      }
     }
-    return { ok: true, value: updated, message: 'Property updated successfully.' };
+    var numericFields = ["price", "bedrooms", "bathrooms"];
+    for (var j = 0; j < numericFields.length; j += 1) {
+      var value = Number(data[numericFields[j]]);
+      if (!Number.isFinite(value) || value <= 0) {
+        return { valid: false, error: numericFields[j] + " must be a number greater than zero." };
+      }
+    }
+    if (global.RealtorStorage.REALTY_STATES.indexOf(data.status) === -1) {
+      return { valid: false, error: "Invalid realty state." };
+    }
+    return { valid: true, error: null };
   }
 
-  window.RealtorRealties = { list: list, getById: getById, create: create, update: update, validate: validate };
-}());
+  function createSeedPhotoUrl(id) {
+    return "https://picsum.photos/seed/" + encodeURIComponent(id) + "/800/500";
+  }
+
+  function createRealty(data) {
+    var validation = validateRealty(data);
+    if (!validation.valid) return { ok: false, message: validation.error };
+    var id = data.id || "rlt-" + Date.now().toString(36);
+    var now = new Date().toISOString();
+    var record = {
+      id: id,
+      title: String(data.title).trim(),
+      address: String(data.address).trim(),
+      price: Number(data.price),
+      description: String(data.description || "").trim(),
+      status: data.status,
+      bedrooms: Number(data.bedrooms),
+      bathrooms: Number(data.bathrooms),
+      image: String(data.image || "").trim() ? String(data.image).trim() : createSeedPhotoUrl(id),
+      createdAt: data.createdAt || now,
+      updatedAt: now
+    };
+    var items = global.RealtorStorage.getRealties();
+    items.push(record);
+    global.RealtorStorage.saveRealties(items);
+    return { ok: true, item: record, message: "Realty created successfully." };
+  }
+
+  function updateRealty(id, changes) {
+    var items = global.RealtorStorage.getRealties();
+    var index = -1;
+    for (var i = 0; i < items.length; i += 1) if (items[i].id === id) index = i;
+    if (index < 0) return { ok: false, message: "Realty not found." };
+    var record = Object.assign({}, items[index], changes, {
+      title: String(changes.title).trim(),
+      address: String(changes.address).trim(),
+      price: Number(changes.price),
+      description: String(changes.description || "").trim(),
+      bedrooms: Number(changes.bedrooms),
+      bathrooms: Number(changes.bathrooms),
+      image: String(changes.image || "").trim() ? String(changes.image).trim() : createSeedPhotoUrl(id),
+      updatedAt: new Date().toISOString()
+    });
+    var validation = validateRealty(record);
+    if (!validation.valid) return { ok: false, message: validation.error };
+    items[index] = record;
+    global.RealtorStorage.saveRealties(items);
+    return { ok: true, item: record, message: "Realty updated successfully." };
+  }
+
+  function getRealtyById(id) {
+    var items = global.RealtorStorage.getRealties();
+    for (var i = 0; i < items.length; i += 1) if (items[i].id === id) return items[i];
+    return null;
+  }
+
+  function listRealties(options) {
+    var items = global.RealtorStorage.getRealties();
+    options = options || {};
+    if (!options.status || options.status === "all") return items.slice();
+    return items.filter(function (item) { return item.status === options.status; });
+  }
+
+  global.RealtorRealties = {
+    createRealty: createRealty,
+    updateRealty: updateRealty,
+    getRealtyById: getRealtyById,
+    listRealties: listRealties,
+    validateRealty: validateRealty,
+    createSeedPhotoUrl: createSeedPhotoUrl,
+    create: createRealty,
+    update: updateRealty,
+    getById: getRealtyById,
+    list: listRealties,
+    validate: validateRealty
+  };
+})(window);

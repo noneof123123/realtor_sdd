@@ -151,6 +151,9 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .note-card > span:last-child { color: #9a9f91; font-size: 8px; font-weight: 700; letter-spacing: 1.4px; }
 
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
+.status-filters { display: flex; flex-wrap: wrap; gap: 7px; }
+.filter-button { min-height: 36px; padding: 0 12px; border: 1px solid #e5e8e4; border-radius: 9px; background: #fff; color: #737d76; cursor: pointer; font-size: 10px; font-weight: 680; }
+.filter-button:hover, .filter-button.is-active { border-color: #91a89a; background: #edf3ef; color: #456150; }
 .search-field { width: min(370px, 100%); min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #e8eae6; border-radius: 10px; background: #fff; color: #9ba19b; }
 .search-field .icon { width: 16px; height: 16px; }
 .search-field input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 11px; }

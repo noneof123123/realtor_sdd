@@ -4,7 +4,7 @@ description: Reusable template for execute any spec. Only change the SPEC_NAME a
 ---
 
 Configuration
-- SPEC_NAME: 001-create-foundation
+- SPEC_NAME: 003-manage-tenants
 
 Route resolution rule
 - SPEC_DIR = .specify/specs/${SPEC_NAME}
@@ -18,6 +18,7 @@ Mandatory flow
 
 1. Read and folow
   - .github/copilot-instructions.md
+  - AGENTS.md
   - specify/memory/constitution.md
   - ${SPEC_FILE}
   - ${PLAN_FILE}
